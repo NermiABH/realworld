@@ -1,7 +1,8 @@
-
 # Project exclude directories
 /venv/
 /.idea/
 
+
 # Project exclude files
 /z.txt
+/api/db.sqlite3
