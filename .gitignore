@@ -1,3 +1,7 @@
 
-# Project exclude paths
+# Project exclude directories
 /venv/
+/.idea/
+
+# Project exclude files
+/z.txt
