@@ -4,5 +4,7 @@
 
 
 # Project exclude files
-/z.txt
 /api/db.sqlite3
+/api/myapp/migrations/*
+!/api/myapp/migrations/__init__.py
+/api/*.png
