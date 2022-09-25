@@ -8,3 +8,4 @@
 /api/myapp/migrations/*
 !/api/myapp/migrations/__init__.py
 /api/*.png
+/api/Media/*.png
