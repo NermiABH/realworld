@@ -19,9 +19,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     subscriptions = models.ManyToManyField('self', 'subscribers', symmetrical=False,
                                            verbose_name=_('Subscriptions'),
                                            blank=True)
-    favourites = models.ManyToManyField('Article', 'users', verbose_name=_('Favorites articles'), blank=True)
-    likes = models.ManyToManyField('Article', 'liked_users', blank=True)
-    dislikes = models.ManyToManyField('Article', 'disliked_users', blank=True)
+    favourites = models.ManyToManyField('Article', 'users_favourites', verbose_name=_('Favorites articles'), blank=True)
+    liked_articles = models.ManyToManyField('Article', 'users_liked_articles', blank=True)
+    disliked_articles = models.ManyToManyField('Article', 'users_disliked_articles', blank=True)
+    liked_comments = models.ManyToManyField('Article', 'users_liked_comments', blank=True)
+    disliked_comments = models.ManyToManyField('Article', 'users_disliked_comments', blank=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     USERNAME_FIELD = 'email'
@@ -29,14 +31,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     objects = CustomUserManager()
 
     def __str__(self):
-        return f"{self.email} - {self.username} -{self.name} - {self.surname}"
+        return f"{self.email} - {self.username} - {self.name} - {self.surname}"
 
 
 class CustomModel(models.Model):
     """All inherited models from CustomModel will have created and updated"""
 
-    created = models.DateTimeField(_('Creation date'), editable=True, auto_now_add=True)
-    updated = models.DateTimeField(_('Update date'), editable=True, auto_now=True)
+    created = models.DateTimeField(_('Creation date'),  auto_now_add=True, editable=True,)
+    updated = models.DateTimeField(_('Update date'), auto_now=True, editable=True,)
 
     class Meta:
         abstract = True
@@ -46,15 +48,14 @@ class Article(CustomModel):
     title = models.CharField(_('Title'), max_length=MAX_LENGTH)
     description = models.TextField(_('Description'))
     body = models.TextField(_('Text'))
-    author = models.ForeignKey(CustomUser, verbose_name=_('Author'), on_delete=models.CASCADE)
+    author = models.ForeignKey(CustomUser, models.SET_NULL, 'articles', verbose_name=_('Author'), null=True)
     slug = models.SlugField(_('Slug'), unique=True)
     tagList = TaggableManager()
 
 
-#
-# class Comments(models.Model):
-#     author = models.ForeignKey(CustomUser, _('Author'), models.CASCADE)
-#     body = models.TextField(_('Body'))
-#     likes = models.Count(_('Number of likes'))
-#     dislikes = models.Count(_('Number of dislikes'))
-#     reply = models.ForeignKey('self', , models.CASCADE)
+class Comment(CustomModel):
+    author = models.ForeignKey(CustomUser, models.SET_NULL, 'comments', verbose_name=_('Author'), null=True)
+    body = models.TextField(_('Body'))
+    parent = models.ForeignKey('self', models.CASCADE, 'child',
+                               verbose_name=_('Reply to this comment'),
+                               blank=True, null=True)

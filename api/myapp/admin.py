@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CustomUser, Article
+from .models import CustomUser, Article, Comment
 from django.contrib.auth.admin import UserAdmin
 
 
@@ -11,12 +11,13 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = (
         ('Data for site', {'fields': ('email', 'password', 'username', 'image',
                                       'date_of_joining', 'subscriptions', 'favourites',
-                                      'likes', 'dislikes',)}),
+                                      'liked_articles', 'disliked_articles',
+                                      'liked_comments', 'disliked_comments',)}),
         ('Personal data', {'fields': ('name', 'surname',
                                       'bio', 'date_of_birth')}),
         ('Permissions', {'fields': ('is_staff', 'is_active')}),
     )
-    readonly_fields = ('date_of_joining',)
+    readonly_fields = ('date_of_joining', )
     search_fields = ('email',)
     ordering = ('id',)
 
@@ -27,3 +28,10 @@ class ArticleAdmin(admin.ModelAdmin):
     readonly_fields = ('created', 'updated')
     ordering = ('id',)
 
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'author', 'parent',)
+    fields = ('author', 'body', 'parent', 'created', 'updated')
+    readonly_fields = ('created', 'updated')
+    ordering = ('id',)
