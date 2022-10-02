@@ -19,8 +19,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     subscriptions = models.ManyToManyField('self', 'subscribers', symmetrical=False,
                                            verbose_name=_('Subscriptions'),
                                            blank=True)
-    favourites = models.ManyToManyField('Article', 'users_favourites', verbose_name=_('Favorites articles'), blank=True)
-    liked_articles = models.ManyToManyField('Article', 'users_liked_articles', blank=True)
+    favourites = models.ManyToManyField('Article', related_name='users_favourites', verbose_name=_('Favorites articles'), blank=True)
+    liked_articles = models.ManyToManyField('Article', related_name='users_liked_articles', blank=True)
     disliked_articles = models.ManyToManyField('Article', 'users_disliked_articles', blank=True)
     liked_comments = models.ManyToManyField('Article', 'users_liked_comments', blank=True)
     disliked_comments = models.ManyToManyField('Article', 'users_disliked_comments', blank=True)
@@ -37,8 +37,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 class CustomModel(models.Model):
     """All inherited models from CustomModel will have created and updated"""
 
-    created = models.DateTimeField(_('Creation date'),  auto_now_add=True, editable=True,)
-    updated = models.DateTimeField(_('Update date'), auto_now=True, editable=True,)
+    createdAt = models.DateTimeField(_('Creation date'),  auto_now_add=True, editable=True,)
+    updatedAt = models.DateTimeField(_('Update date'), auto_now=True, editable=True,)
 
     class Meta:
         abstract = True
@@ -51,7 +51,7 @@ class Article(CustomModel):
     author = models.ForeignKey(CustomUser, models.SET_NULL, 'articles', verbose_name=_('Author'), null=True)
     slug = models.SlugField(_('Slug'), unique=True)
     tagList = TaggableManager()
-
+    
 
 class Comment(CustomModel):
     author = models.ForeignKey(CustomUser, models.SET_NULL, 'comments', verbose_name=_('Author'), null=True)

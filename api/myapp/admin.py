@@ -25,7 +25,7 @@ class CustomUserAdmin(UserAdmin):
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'author',)
-    readonly_fields = ('created', 'updated')
+    readonly_fields = ('createdAt', 'updatedAt')
     ordering = ('id',)
 
 
@@ -33,5 +33,5 @@ class ArticleAdmin(admin.ModelAdmin):
 class CommentAdmin(admin.ModelAdmin):
     list_display = ('id', 'author', 'parent',)
     fields = ('author', 'body', 'parent', 'created', 'updated')
-    readonly_fields = ('created', 'updated')
+    readonly_fields = ('createdAt', 'updatedAt')
     ordering = ('id',)

@@ -35,8 +35,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'myapp',
     'taggit',
+    'django_filters'
 ]
 
 MIDDLEWARE = [
@@ -122,3 +124,11 @@ AUTH_USER_MODEL = 'myapp.CustomUser'
 
 MEDIA_URL = 'Media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'Media')
+
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': (
+      'django_filters.rest_framework.DjangoFilterBackend',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'myapp.services.CustomLimitOffsetPagination',
+    'PAGE_SIZE': 20
+}
