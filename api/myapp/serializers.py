@@ -6,16 +6,14 @@ from taggit.serializers import TaggitSerializer, TagListSerializerField
 class ArticleSerializer(TaggitSerializer,
                         serializers.ModelSerializer):
     tagList = TagListSerializerField()
+    favorited = serializers.ReadOnlyField(default=False)
 
     class Meta:
         model = Article
-        fields = ['slug', 'title', 'description',
+        fields = ('slug', 'title', 'description',
                   'body', 'tagList', 'createdAt',
-                  'updatedAt', 'author']
-
-    def is_M2M(self, instance, user_pk):
-
-        return instance.filter(pk=user_pk).exists()
+                  'updatedAt', 'favorited', 'favoritesCount',
+                  'likes', 'dislikes', 'author')
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -23,8 +21,16 @@ class ArticleSerializer(TaggitSerializer,
             'username': instance.author.username,
             'bio': instance.author.bio,
             'image': f'{instance.author.image}',
-            'subscribed': self.is_M2M(instance.author.subscriptions, self.context['request'].user.pk)
         }
-        return representation
+        if self.context['request'].user.is_authenticated:
+            representation['favorited'] = self.context['request'].user.favourites.filter(
+                                            pk=instance.pk
+                                        ).exists()
+            representation['author']['following'] = self.context['request'].user.subscriptions.filter(
+                                                        pk=instance.author.pk
+                                                    ).exists()
+        else:
+            representation['author']['following'] = False
 
+        return representation
 

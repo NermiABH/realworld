@@ -22,7 +22,19 @@ class ArticleRouter(routers.SimpleRouter):
             name='{basename}-list_feed',
             detail=False,
             initkwargs={'suffix': 'List'}
-        )
+        ),
+        routers.Route(
+            url=r'^{prefix}/{lookup}{trailing_slash}$',
+            mapping={
+                'get': 'retrieve',
+                'put': 'update',
+                'patch': 'partial_update',
+                'delete': 'destroy'
+            },
+            name='{basename}-detail',
+            detail=True,
+            initkwargs={'suffix': 'Instance'}
+        ),
     ]
 
 
