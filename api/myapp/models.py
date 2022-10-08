@@ -16,8 +16,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     image = models.ImageField(_('Image'), null=True)
     date_of_joining = models.DateTimeField(_('Date joined'), auto_now_add=True)
     date_of_birth = models.DateField(_('Date of birth'), blank=True, null=True)
-    subscriptions = models.ManyToManyField('self', related_name='subscribers', symmetrical=False,
-                                           verbose_name=_('Subscriptions'), blank=True)
+    sent_requests = models.ManyToManyField('self', related_name='followers', symmetrical=False,
+                                           verbose_name=_('Sent followers'), blank=True)
     favourites = models.ManyToManyField('Article', related_name='users_favourites',
                                         verbose_name=_('Favorites articles'), blank=True)
     liked_articles = models.ManyToManyField('Article', related_name='users_liked_article',
@@ -68,9 +68,14 @@ class Article(CustomModel):
 
 
 class Comment(CustomModel):
+
     author = models.ForeignKey(CustomUser, models.SET_NULL, related_name='comments',
-                               verbose_name=_('Author'), null=True)
+                                verbose_name=_('Author'), null=True)
+    article = models.ForeignKey(Article, models.CASCADE, related_name='comments',
+                                verbose_name=_('Article'))
     body = models.TextField(_('Body'))
+    changed = models.BooleanField(default=False, blank=True)
     parent = models.ForeignKey('self', models.CASCADE, related_name='child',
-                               verbose_name=_('Reply to this comment'),
-                               blank=True, null=True)
+                                verbose_name=_('Parent'), blank=True, null=True)
+
+

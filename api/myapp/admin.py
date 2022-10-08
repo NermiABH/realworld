@@ -10,7 +10,7 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('email', 'is_staff', 'is_active',)
     fieldsets = (
         ('Data for site', {'fields': ('email', 'password', 'username', 'image',
-                                      'date_of_joining', 'subscriptions', 'favourites',
+                                      'date_of_joining', 'sent_requests', 'favourites',
                                       'liked_articles', 'disliked_articles',
                                       'liked_comments', 'disliked_comments',)}),
         ('Personal data', {'fields': ('name', 'surname',
@@ -29,9 +29,10 @@ class ArticleAdmin(admin.ModelAdmin):
     ordering = ('id',)
 
 
-@admin.register(Comment)
-class CommentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'author', 'parent',)
-    fields = ('author', 'body', 'parent', 'created', 'updated')
-    readonly_fields = ('createdAt', 'updatedAt')
-    ordering = ('id',)
+# @admin.register(Comment)
+# class CommentAdmin(admin.ModelAdmin):
+#     fieldsets = (
+#         ('Data for site', {'fields': ('parent',)}),)
+
+#
+admin.site.register(Comment)

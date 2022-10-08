@@ -1,29 +1,23 @@
-from django_filters import rest_framework as filters
+import django_filters
+from django_filters import filters, filterset
 from .models import Article
-from rest_framework.pagination import LimitOffsetPagination
-from rest_framework.response import Response
+from taggit.forms import TagField
+
+class TagFilter(django_filters.CharFilter):
+    field_class = TagField
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('lookup_expr', 'in')
+        super().__init__(*args, **kwargs)
 
 
-# # Filters
-# class CharFilterInFilter(filters.BaseInFilter, filters.CharFilter):
-#     pass
-#
-#
-# class ArticleFilter(filters.FilterSet):
-#     title = CharFilterInFilter(field_name='title__name', lookup_expr='in')
-#
-#     class Meta:
-#         model = Article
-#         fields = ['title']
+class CharFilterInFilter(filters.BaseInFilter, filters.CharFilter):
+    pass
 
-
-# Pagination
-class CustomLimitOffsetPagination(LimitOffsetPagination):
-    def get_paginated_response(self, data):
-        return Response({
-            'count_pages': self.count,
-            'next': self.get_next_link(),
-            'previous': self.get_previous_link(),
-            'articles': data,
-
-        })
+class ArticleFilter(filterset.FilterSet):
+    tags = TagFilter(field_name='tagList__name')
+    author = CharFilterInFilter(field_name='author__username', lookup_expr='in')
+    favorited = CharFilterInFilter(field_name='users_favourites__username', lookup_expr='in')
+    class Meta:
+        model = Article
+        fields = ['tags', 'author', 'favorited']
