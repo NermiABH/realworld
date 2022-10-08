@@ -94,7 +94,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
             return Response(super().destroy(request, *args, **kwargs).data)
         return Response({'comment': response_data.data})
 
-
+asdfffffffffffffffjalkgasldgfasljhg;jasng;asggsa
 class TagList(views.APIView):
     def get(self, request):
         tags = Tag.objects.values_list('name', flat=True)
