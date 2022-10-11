@@ -1,14 +1,14 @@
-from django.urls import path, re_path
-from .views import ArticleViewSet, TagList
-from rest_framework.routers import SimpleRouter
+from django.urls import path
+from .views import TagList
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .routers import router_user, router_article
 
-router_article = SimpleRouter()
-router_article.register(r'articles', ArticleViewSet)
 
-urlpatterns = router_article.urls
-
+urlpatterns = router_user.urls
+urlpatterns += router_article.urls
 urlpatterns += [
-    path('tags', TagList.as_view())
+    path('tags/', TagList.as_view()),
+    path('users/login/', TokenObtainPairView.as_view()),
 ]
 
 

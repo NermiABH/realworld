@@ -10,21 +10,20 @@ MAX_LENGTH = 100
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_('Email address'), unique=True)
     username = models.CharField(_('Username'), unique=True, max_length=MAX_LENGTH)
-    name = models.CharField(_('Name'), max_length=MAX_LENGTH)
-    surname = models.CharField(_('Surname'), max_length=MAX_LENGTH)
+    name = models.CharField(_('Name'), max_length=MAX_LENGTH, blank=True)
+    surname = models.CharField(_('Surname'), max_length=MAX_LENGTH, blank=True)
     bio = models.TextField(_('Biography'), blank=True)
-    image = models.ImageField(_('Image'), null=True)
+    image = models.ImageField(_('Image'), null=True, blank=True)
     date_of_joining = models.DateTimeField(_('Date joined'), auto_now_add=True)
     date_of_birth = models.DateField(_('Date of birth'), blank=True, null=True)
     sent_requests = models.ManyToManyField('self', related_name='followers', symmetrical=False,
                                            verbose_name=_('Sent followers'), blank=True)
-    favourites = models.ManyToManyField('Article', related_name='users_favourites',
+    favorites = models.ManyToManyField('Article', related_name='users_favorites',
                                         verbose_name=_('Favorites articles'), blank=True)
-    liked_articles = models.ManyToManyField('Article', related_name='users_liked_article',
-                                            blank=True)
+    liked_articles = models.ManyToManyField('Article', related_name='users_liked_article', blank=True)
     disliked_articles = models.ManyToManyField('Article', related_name='users_disliked_article', blank=True)
-    liked_comments = models.ManyToManyField('Article', related_name='users_liked_comment', blank=True)
-    disliked_comments = models.ManyToManyField('Article', related_name='users_disliked_comment', blank=True)
+    liked_comments = models.ManyToManyField('Comment', related_name='users_liked_comment', blank=True)
+    disliked_comments = models.ManyToManyField('Comment', related_name='users_disliked_comment', blank=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     USERNAME_FIELD = 'email'
@@ -54,17 +53,17 @@ class Article(CustomModel):
     slug = models.SlugField(_('Slug'), unique=True)
     tagList = TaggableManager(blank=True)
 
-    def likes(self):
+    def likesCount(self):
         return self.users_liked_article.count()
 
-    def dislikes(self):
+    def dislikesCount(self):
         return self.users_disliked_article.count()
 
-    def favourites(self):
-        return self.users_favourites.all()
+    def favorites(self):
+        return self.users_favorites.all()
 
     def favoritesCount(self):
-        return self.favourites().count()
+        return self.favorites().count()
 
 
 class Comment(CustomModel):
@@ -78,4 +77,8 @@ class Comment(CustomModel):
     parent = models.ForeignKey('self', models.CASCADE, related_name='child',
                                 verbose_name=_('Parent'), blank=True, null=True)
 
+    def likesCount(self):
+        return self.users_liked_comment.count()
 
+    def dislikesCount(self):
+        return self.users_disliked_comment.count()

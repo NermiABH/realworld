@@ -1,18 +1,65 @@
 from rest_framework import viewsets, views
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import mixins
 from .models import Article, Comment, CustomUser
-from .serializers import ArticleSerializer, CommentSerializer
+from .serializers import ArticleSerializer, CommentSerializer, UserSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from .services import ArticleFilter
 from taggit.models import Tag
-class ArticleViewSet(viewsets.ModelViewSet):
+
+
+def change_field_M2M(self, request, queryset, manyfield, **kwargs):
+    """New Function that add or remove a field for ManyToMany,
+    such as like, dislike and favourite"""
+    instance = queryset.get(**kwargs)
+    if request.method == "POST":
+        manyfield.add(instance)
+    else:
+        manyfield.remove(instance)
+    request.method = 'GET'
+    serializer = self.get_serializer(instance)
+    return Response(serializer.data)
+
+
+class UserViewSet(mixins.CreateModelMixin,
+                  mixins.RetrieveModelMixin,
+                  mixins.UpdateModelMixin,
+                  viewsets.ViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+    def get_serializer_context(self):
+        return {'request': self.request}
+
+    def get_object(self):
+        if self.request.data:
+            return self.queryset.get(**self.request.data)
+        return self.request.user
+    def get_serializer(self, *args, **kwargs):
+        kwargs.setdefault('context', self.get_serializer_context())
+        return UserSerializer(*args, **kwargs)
+
+    @action(methods=['GET'], detail=False, url_path='profiles/(?P<username>\w+)')
+    def profile(self, request, *args, **kwargs):
+        self.request.data['username']=kwargs.get('username')
+        response_data = super().retrieve(request, *args, **kwargs)
+        return Response({'profile':response_data.data})
+
+    @action(methods=['POST', 'DELETE'], detail=False, url_path='profiles/(?P<username>\w+)/follow')
+    def profile_follow(self, request, *args, **kwargs):
+        self.request.data['username'] = kwargs.get('username')
+        response_data = change_field_M2M(self, request, self.queryset, self.request.user.sent_requests, **kwargs)
+        return Response(response_data.data)
+
+
+class ArticleCommentViewSet(viewsets.ModelViewSet):
+    pagination_class = LimitOffsetPagination
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
-    # filter_backends = (DjangoFilterBackend,)
-    # filterset_class = ArticleFilter
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = ArticleFilter
     lookup_field = 'slug'
-    lookup_value_regex = '[?!feed]'
     default_fields_serializer = {}
 
     def get_serializer_context(self):
@@ -45,22 +92,19 @@ class ArticleViewSet(viewsets.ModelViewSet):
         response_data = super().update(request, *args, **kwargs)
         return Response({'article': response_data.data})
 
-    def change_field_M2M(self, request, queryset, manyfield, **kwargs):
-        """New Function that add or remove a field for ManyToMany,
-        such as like, dislike and favourite"""
-        instance = queryset.get(**kwargs)
-        if request.method == "POST":
-            manyfield.add(instance)
-        else:
-            manyfield.remove(instance)
-        request.method = 'GET'
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
-
-    @action(detail=True, methods=['POST', 'DELETE'], url_path='favorite', lookup_field='slug')
+    @action(detail=True, methods=['POST', 'DELETE'], url_path='favorited', lookup_field='slug')
     def favorite(self, request, *args, **kwargs):
-        response_data = self.change_field_M2M(request, self.queryset, request.user.favourites, **kwargs)
+        response_data = change_field_M2M(request, self.queryset, request.user.favourites, **kwargs)
+        return Response(response_data.data)
+
+    @action(detail=True, methods=['POST', 'DELETE'], url_path='liked', lookup_field='slug')
+    def like_article(self, request, *args, **kwargs):
+        response_data = change_field_M2M(request, self.queryset, request.user.liked_articles, **kwargs)
+        return Response(response_data.data)
+
+    @action(detail=True, methods=['POST', 'DELETE'], url_path='disliked', lookup_field='slug')
+    def dislike_article(self, request, *args, **kwargs):
+        response_data = change_field_M2M(request, self.queryset, request.user.disliked_articles, **kwargs)
         return Response(response_data.data)
 
     @action(detail=True, methods=['GET','POST'], url_path='comments',
@@ -94,7 +138,21 @@ class ArticleViewSet(viewsets.ModelViewSet):
             return Response(super().destroy(request, *args, **kwargs).data)
         return Response({'comment': response_data.data})
 
-asdfffffffffffffffjalkgasldgfasljhg;jasng;asggsa
+    @action(detail=True, methods=['POST', 'DELETE'], url_path='comments/(?P<pk>[+]?\d+)/liked',
+            lookup_field='pk', queryset = Comment.objects.all(), serializer_class=CommentSerializer)
+    def like_comment(self, request, *args, **kwargs):
+        kwargs.pop('slug')
+        response_data = change_field_M2M(request, self.queryset, request.user.liked_comments, **kwargs)
+        return Response(response_data.data)
+
+    @action(detail=True, methods=['POST', 'DELETE'], url_path='comments/(?P<pk>[+]?\d+)/disliked',
+            lookup_field='pk', queryset = Comment.objects.all(), serializer_class=CommentSerializer)
+    def dislike_comment(self, request, *args, **kwargs):
+        kwargs.pop('slug')
+        response_data = change_field_M2M(request, self.queryset, request.user.disliked_comments, **kwargs)
+        return Response(response_data.data)
+
+
 class TagList(views.APIView):
     def get(self, request):
         tags = Tag.objects.values_list('name', flat=True)

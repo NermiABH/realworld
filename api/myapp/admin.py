@@ -10,7 +10,7 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('email', 'is_staff', 'is_active',)
     fieldsets = (
         ('Data for site', {'fields': ('email', 'password', 'username', 'image',
-                                      'date_of_joining', 'sent_requests', 'favourites',
+                                      'date_of_joining', 'sent_requests', 'favorites',
                                       'liked_articles', 'disliked_articles',
                                       'liked_comments', 'disliked_comments',)}),
         ('Personal data', {'fields': ('name', 'surname',
