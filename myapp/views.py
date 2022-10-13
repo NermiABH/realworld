@@ -45,6 +45,7 @@ def exception_handler(exc, context):
         }
     return Response(response.data, status=response.status_code, headers=response.headers)
 
+
 class UserCustomViewSet(UserViewSet):
     pagination_class = None
     def get_serializer_context(self):
