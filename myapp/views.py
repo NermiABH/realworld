@@ -9,6 +9,7 @@ from .serializers import ArticleSerializer, CommentSerializer, UserSerializer
 from .services import ArticleFilter
 from djoser.views import UserViewSet
 from .permissions import IsOwnerOrReadOnly
+from django.contrib.auth.views import auth_logout
 
 
 def change_field_M2M(self, request, queryset, manyfield, **kwargs):
@@ -34,7 +35,6 @@ def exception_handler(exc, context):
         response.data['errors'] = {
             'obj': response.data.pop('detail')
         }
-
     elif response.status_code == 405:
         response.data['errors'] = {
             'method': response.data.pop('detail')
@@ -75,7 +75,7 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
         response_data.data['articlesCount'] = self.queryset.count()
         return Response(response_data.data)
 
-    @action(detail=False, methods=['GET'], url_path='feed', url_name='feed')
+    @action(detail=False, methods=['GET'], url_path='feed', url_name='feed', permission_classes=(IsAuthenticated,))
     def list_feed(self, request, *args, **kwargs):
         self.queryset = Article.objects.filter(author__in=request.user.sent_requests.all())
         return Response(self.list(request, *args, **kwargs).data)
@@ -171,3 +171,8 @@ class TagList(views.APIView):
     def get(self, request):
         tags = Tag.objects.values_list('name', flat=True)
         return Response({'tags': tags})
+
+class LogoutView(views.APIView):
+    def post(self, request):
+        auth_logout(request)
+        return Response({'uses':'Logout from session'})
