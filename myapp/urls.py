@@ -2,7 +2,7 @@ from django.urls import path
 from .views import TagList
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .routers import router_article
-from .views import UserCustomViewSet
+from .views import UserCustomViewSet, LogoutView
 
 urlpatterns = router_article.urls
 urlpatterns += [
@@ -16,7 +16,8 @@ urlpatterns += [
     path('profiles/<str:username>/follow/', UserCustomViewSet.as_view({'get':'follow_profile'})),
 
 
-    path('all_users/', UserCustomViewSet.as_view({'get':'list'}))
+    path('all_users/', UserCustomViewSet.as_view({'get':'list'})),
+    path('logout_user/', LogoutView.as_view())
 ]
 
 
