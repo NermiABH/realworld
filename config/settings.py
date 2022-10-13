@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'djoser',
+    'drf_yasg',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'taggit',
@@ -132,17 +133,18 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'Media')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_FILTER_BACKENDS': (
       'django_filters.rest_framework.DjangoFilterBackend',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 20,
+    'EXCEPTION_HANDLER': 'myapp.views.exception_handler',
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ]
 }
 
@@ -180,5 +182,9 @@ SIMPLE_JWT = {
 }
 
 DJOSER = {
-
+'SERIALIZERS': {
+        'current_user': 'myapp.serializers.UserSerializer',
+        'user': 'myapp.serializers.UserSerializer',
+},
+'USER_ID_FIELD': 'username',
 }

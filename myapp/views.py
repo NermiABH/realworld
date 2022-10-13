@@ -1,13 +1,14 @@
-from rest_framework import viewsets, views
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework import viewsets, views, pagination
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import mixins
+from taggit.models import Tag
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import Article, Comment, CustomUser
 from .serializers import ArticleSerializer, CommentSerializer, UserSerializer
-from django_filters.rest_framework import DjangoFilterBackend
 from .services import ArticleFilter
-from taggit.models import Tag
+from djoser.views import UserViewSet
+from .permissions import IsOwnerOrReadOnly
 
 
 def change_field_M2M(self, request, queryset, manyfield, **kwargs):
@@ -23,44 +24,47 @@ def change_field_M2M(self, request, queryset, manyfield, **kwargs):
     return Response(serializer.data)
 
 
-class UserViewSet(mixins.CreateModelMixin,
-                  mixins.RetrieveModelMixin,
-                  mixins.UpdateModelMixin,
-                  viewsets.ViewSet):
-    queryset = CustomUser.objects.all()
-    serializer_class = UserSerializer
+def exception_handler(exc, context):
+    response = views.exception_handler(exc, context)
+    if response.status_code == 400:
+        response.data = {
+            'errors': response.data
+        }
+    elif response.status_code == 404:
+        response.data['errors'] = {
+            'obj': response.data.pop('detail')
+        }
+
+    elif response.status_code == 405:
+        response.data['errors'] = {
+            'method': response.data.pop('detail')
+        }
+    elif response.status_code == 401:
+        response.data['errors'] = {
+            'permission': response.data.pop('detail')
+        }
+    return Response(response.data, status=response.status_code, headers=response.headers)
+
+class UserCustomViewSet(UserViewSet):
+    pagination_class = None
     def get_serializer_context(self):
-        return {'request': self.request}
+        return {'request': self.request,
+                'kwargs': self.kwargs}
 
-    def get_object(self):
-        if self.request.data:
-            return self.queryset.get(**self.request.data)
-        return self.request.user
-    def get_serializer(self, *args, **kwargs):
-        kwargs.setdefault('context', self.get_serializer_context())
-        return UserSerializer(*args, **kwargs)
-
-    @action(methods=['GET'], detail=False, url_path='profiles/(?P<username>\w+)')
-    def profile(self, request, *args, **kwargs):
-        self.request.data['username']=kwargs.get('username')
-        response_data = super().retrieve(request, *args, **kwargs)
-        return Response({'profile':response_data.data})
-
-    @action(methods=['POST', 'DELETE'], detail=False, url_path='profiles/(?P<username>\w+)/follow')
-    def profile_follow(self, request, *args, **kwargs):
-        self.request.data['username'] = kwargs.get('username')
-        response_data = change_field_M2M(self, request, self.queryset, self.request.user.sent_requests, **kwargs)
+    @action(methods=['POST', 'DELETE'],detail=False)
+    def follow_profile(self, request, *args, **kwargs):
+        self.queryset = CustomUser.objects.get(kwargs.get('username'))
+        response_data = change_field_M2M(request, self.queryset, request.user.sent_requests, **kwargs)
         return Response(response_data.data)
 
-
 class ArticleCommentViewSet(viewsets.ModelViewSet):
-    pagination_class = LimitOffsetPagination
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
     filter_backends = (DjangoFilterBackend,)
     filterset_class = ArticleFilter
     lookup_field = 'slug'
     default_fields_serializer = {}
+    permission_classes = (IsOwnerOrReadOnly, IsAuthenticatedOrReadOnly)
 
     def get_serializer_context(self):
         return {'request': self.request}
@@ -83,32 +87,40 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         self.default_fields_serializer['author'] = request.user
         response_data = super().create(request, *args, **kwargs)
-        return Response({'article': response_data.data})
+        return Response({'article': response_data.data},
+                        status=response_data.status_code,
+                        headers=response_data.headers)
 
     def perform_create(self, serializer):
         serializer.save(**self.default_fields_serializer)
 
     def update(self, request, *args, **kwargs):
         response_data = super().update(request, *args, **kwargs)
-        return Response({'article': response_data.data})
+        return Response({'article': response_data.data},
+                        status=response_data.status_code,
+                        headers=response_data.headers)
 
-    @action(detail=True, methods=['POST', 'DELETE'], url_path='favorited', lookup_field='slug')
+    @action(detail=True, methods=['POST', 'DELETE'], url_path='favorited',
+            lookup_field='slug', permission_classes=IsAuthenticated)
     def favorite(self, request, *args, **kwargs):
         response_data = change_field_M2M(request, self.queryset, request.user.favourites, **kwargs)
         return Response(response_data.data)
 
-    @action(detail=True, methods=['POST', 'DELETE'], url_path='liked', lookup_field='slug')
+    @action(detail=True, methods=['POST', 'DELETE'], url_path='liked',
+            lookup_field='slug', permission_classes=IsAuthenticated)
     def like_article(self, request, *args, **kwargs):
         response_data = change_field_M2M(request, self.queryset, request.user.liked_articles, **kwargs)
         return Response(response_data.data)
 
-    @action(detail=True, methods=['POST', 'DELETE'], url_path='disliked', lookup_field='slug')
+    @action(detail=True, methods=['POST', 'DELETE'], url_path='disliked',
+            lookup_field='slug', permission_classes=IsAuthenticated)
     def dislike_article(self, request, *args, **kwargs):
         response_data = change_field_M2M(request, self.queryset, request.user.disliked_articles, **kwargs)
         return Response(response_data.data)
 
     @action(detail=True, methods=['GET','POST'], url_path='comments',
-            url_name='comments', serializer_class=CommentSerializer, queryset=Comment.objects.all())
+            url_name='comments', serializer_class=CommentSerializer,
+            queryset=Comment.objects.all(), permission_classes=IsAuthenticatedOrReadOnly)
     def comments(self, request, *args, **kwargs):
         self.queryset = self.queryset.filter(article__slug=kwargs.get('slug'))
         if request.method == 'POST':
@@ -123,7 +135,7 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['GET', 'PUT', 'DELETE'], url_path='comments/(?P<pk>[+]?\d+)',
             url_name='comments', serializer_class=CommentSerializer, queryset=Comment.objects.all(),
-            lookup_field='pk')
+            lookup_field='pk', permission_classes = IsAuthenticatedOrReadOnly)
     def comment(self, request, *args, **kwargs):
         if request.method == 'GET':
             response_data = super().retrieve(request, *args, **kwargs)
@@ -139,14 +151,16 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
         return Response({'comment': response_data.data})
 
     @action(detail=True, methods=['POST', 'DELETE'], url_path='comments/(?P<pk>[+]?\d+)/liked',
-            lookup_field='pk', queryset = Comment.objects.all(), serializer_class=CommentSerializer)
+            lookup_field='pk', queryset = Comment.objects.all(), serializer_class=CommentSerializer,
+            permission_classes = IsAuthenticated)
     def like_comment(self, request, *args, **kwargs):
         kwargs.pop('slug')
         response_data = change_field_M2M(request, self.queryset, request.user.liked_comments, **kwargs)
         return Response(response_data.data)
 
     @action(detail=True, methods=['POST', 'DELETE'], url_path='comments/(?P<pk>[+]?\d+)/disliked',
-            lookup_field='pk', queryset = Comment.objects.all(), serializer_class=CommentSerializer)
+            lookup_field='pk', queryset = Comment.objects.all(), serializer_class=CommentSerializer,
+            permission_classes = IsAuthenticated)
     def dislike_comment(self, request, *args, **kwargs):
         kwargs.pop('slug')
         response_data = change_field_M2M(request, self.queryset, request.user.disliked_comments, **kwargs)

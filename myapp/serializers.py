@@ -1,7 +1,4 @@
 from rest_framework import serializers
-from rest_framework_simplejwt.settings import api_settings
-from rest_framework_simplejwt.tokens import RefreshToken
-
 from .models import Article, Comment, CustomUser
 from taggit.serializers import TaggitSerializer, TagListSerializerField
 
@@ -13,10 +10,9 @@ class UserSerializer(serializers.ModelSerializer):
                   'bio', 'image', 'date_of_joining',
                   'date_of_birth', 'followers', 'sent_requests',
                   'favorites')
-        read_only_fields = ('email',)
+        read_only_fields = ('followers',)
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-
         i=0
         for favorite_id in representation['favorites']:
             favorite = instance.favorites.get(pk=favorite_id)
@@ -33,7 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
                 'username': follower.username,
                 'image': f'{follower.image}'}
             i+=1
-        if 'username' in self.context['request'].data:
+        if 'username' in self.context['kwargs']:
             representation.pop('sent_requests')
         else:
             i = 0
@@ -45,13 +41,13 @@ class UserSerializer(serializers.ModelSerializer):
                 i += 1
         return representation
 
-
 class ArticleSerializer(TaggitSerializer,
                         serializers.ModelSerializer):
     tagList = TagListSerializerField(default=[])
     favorited = serializers.ReadOnlyField(default=False)
     liked = serializers.ReadOnlyField(default=False)
     disliked = serializers.ReadOnlyField(default=False)
+
     class Meta:
         model = Article
         fields = ('slug', 'title', 'description',
@@ -80,7 +76,6 @@ class ArticleSerializer(TaggitSerializer,
         else:
 
             representation['author']['following'] = False
-
         return representation
 
 
