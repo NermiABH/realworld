@@ -56,7 +56,7 @@ class UserCustomViewSet(UserViewSet):
     def follow_profile(self, request, *args, **kwargs):
         self.queryset = CustomUser.objects.get(kwargs.get('username'))
         response_data = change_field_M2M(self, request, self.queryset, request.user.sent_requests, **kwargs)
-        return Response(response_data.data)
+        return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
 class ArticleCommentViewSet(viewsets.ModelViewSet):
     queryset = Article.objects.all()
