@@ -141,7 +141,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 20,
-    # 'EXCEPTION_HANDLER': 'myapp.views.exception_handler',
+    'EXCEPTION_HANDLER': 'myapp.views.exception_handler',
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ]
