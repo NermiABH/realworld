@@ -102,26 +102,26 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
                         headers=response_data.headers)
 
     @action(detail=True, methods=['POST', 'DELETE'], url_path='favorited',
-            lookup_field='slug', permission_classes=IsAuthenticated)
+            lookup_field='slug', permission_classes=(IsAuthenticated,))
     def favorite(self, request, *args, **kwargs):
         response_data = change_field_M2M(request, self.queryset, request.user.favourites, **kwargs)
-        return Response(response_data.data)
+        return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
     @action(detail=True, methods=['POST', 'DELETE'], url_path='liked',
-            lookup_field='slug', permission_classes=IsAuthenticated)
+            lookup_field='slug', permission_classes=(IsAuthenticated,))
     def like_article(self, request, *args, **kwargs):
         response_data = change_field_M2M(request, self.queryset, request.user.liked_articles, **kwargs)
-        return Response(response_data.data)
+        return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
     @action(detail=True, methods=['POST', 'DELETE'], url_path='disliked',
-            lookup_field='slug', permission_classes=IsAuthenticated)
+            lookup_field='slug', permission_classes=(IsAuthenticated,))
     def dislike_article(self, request, *args, **kwargs):
         response_data = change_field_M2M(request, self.queryset, request.user.disliked_articles, **kwargs)
-        return Response(response_data.data)
+        return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
     @action(detail=True, methods=['GET','POST'], url_path='comments',
             url_name='comments', serializer_class=CommentSerializer,
-            queryset=Comment.objects.all(), permission_classes=IsAuthenticatedOrReadOnly)
+            queryset=Comment.objects.all(), permission_classes=(IsAuthenticatedOrReadOnly,))
     def comments(self, request, *args, **kwargs):
         self.queryset = self.queryset.filter(article__slug=kwargs.get('slug'))
         if request.method == 'POST':
@@ -132,11 +132,11 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
         else:
             response_data = super().list(request, *args, **kwargs)
             response_data.data['comments'] = response_data.data.pop('results')
-        return Response(response_data.data)
+        return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
     @action(detail=True, methods=['GET', 'PUT', 'DELETE'], url_path='comments/(?P<pk>[+]?\d+)',
             url_name='comments', serializer_class=CommentSerializer, queryset=Comment.objects.all(),
-            lookup_field='pk', permission_classes = IsAuthenticatedOrReadOnly)
+            lookup_field='pk', permission_classes = (IsAuthenticatedOrReadOnly,))
     def comment(self, request, *args, **kwargs):
         if request.method == 'GET':
             response_data = super().retrieve(request, *args, **kwargs)
@@ -148,24 +148,27 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
                 self.default_fields_serializer = {'changed':True}
             response_data.save(**self.default_fields_serializer)
         else:
-            return Response(super().destroy(request, *args, **kwargs).data)
-        return Response({'comment': response_data.data})
+            response_data = super().destroy(request, *args, **kwargs)
+            return Response(response_data.data, status=response_data.status_code)
+        return Response({'comment': response_data.data},
+                        status=response_data.status_code,
+                        headers=response_data.headers)
 
     @action(detail=True, methods=['POST', 'DELETE'], url_path='comments/(?P<pk>[+]?\d+)/liked',
             lookup_field='pk', queryset = Comment.objects.all(), serializer_class=CommentSerializer,
-            permission_classes = IsAuthenticated)
+            permission_classes = (IsAuthenticated,))
     def like_comment(self, request, *args, **kwargs):
         kwargs.pop('slug')
         response_data = change_field_M2M(request, self.queryset, request.user.liked_comments, **kwargs)
-        return Response(response_data.data)
+        return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
     @action(detail=True, methods=['POST', 'DELETE'], url_path='comments/(?P<pk>[+]?\d+)/disliked',
             lookup_field='pk', queryset = Comment.objects.all(), serializer_class=CommentSerializer,
-            permission_classes = IsAuthenticated)
+            permission_classes = (IsAuthenticated,))
     def dislike_comment(self, request, *args, **kwargs):
         kwargs.pop('slug')
         response_data = change_field_M2M(request, self.queryset, request.user.disliked_comments, **kwargs)
-        return Response(response_data.data)
+        return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
 
 class TagList(views.APIView):
