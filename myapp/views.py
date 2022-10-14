@@ -55,7 +55,7 @@ class UserCustomViewSet(UserViewSet):
     @action(methods=['POST', 'DELETE'],detail=False)
     def follow_profile(self, request, *args, **kwargs):
         self.queryset = CustomUser.objects.get(kwargs.get('username'))
-        response_data = change_field_M2M(request, self.queryset, request.user.sent_requests, **kwargs)
+        response_data = change_field_M2M(self, request, self.queryset, request.user.sent_requests, **kwargs)
         return Response(response_data.data)
 
 class ArticleCommentViewSet(viewsets.ModelViewSet):
@@ -104,19 +104,19 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['POST', 'DELETE'], url_path='favorited',
             lookup_field='slug', permission_classes=(IsAuthenticated,))
     def favorite(self, request, *args, **kwargs):
-        response_data = change_field_M2M(request, self.queryset, request.user.favourites, **kwargs)
+        response_data = change_field_M2M(self, request, self.queryset, request.user.favourites, **kwargs)
         return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
     @action(detail=True, methods=['POST', 'DELETE'], url_path='liked',
             lookup_field='slug', permission_classes=(IsAuthenticated,))
     def like_article(self, request, *args, **kwargs):
-        response_data = change_field_M2M(request, self.queryset, request.user.liked_articles, **kwargs)
+        response_data = change_field_M2M(self, request, self.queryset, request.user.liked_articles, **kwargs)
         return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
     @action(detail=True, methods=['POST', 'DELETE'], url_path='disliked',
             lookup_field='slug', permission_classes=(IsAuthenticated,))
     def dislike_article(self, request, *args, **kwargs):
-        response_data = change_field_M2M(request, self.queryset, request.user.disliked_articles, **kwargs)
+        response_data = change_field_M2M(self, request, self.queryset, request.user.disliked_articles, **kwargs)
         return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
     @action(detail=True, methods=['GET','POST'], url_path='comments',
@@ -159,7 +159,7 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
             permission_classes = (IsAuthenticated,))
     def like_comment(self, request, *args, **kwargs):
         kwargs.pop('slug')
-        response_data = change_field_M2M(request, self.queryset, request.user.liked_comments, **kwargs)
+        response_data = change_field_M2M(self, request, self.queryset, request.user.liked_comments, **kwargs)
         return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
     @action(detail=True, methods=['POST', 'DELETE'], url_path='comments/(?P<pk>[+]?\d+)/disliked',
@@ -167,7 +167,7 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
             permission_classes = (IsAuthenticated,))
     def dislike_comment(self, request, *args, **kwargs):
         kwargs.pop('slug')
-        response_data = change_field_M2M(request, self.queryset, request.user.disliked_comments, **kwargs)
+        response_data = change_field_M2M(self, request, self.queryset, request.user.disliked_comments, **kwargs)
         return Response(response_data.data, status=response_data.status_code, headers=response_data.headers)
 
 
